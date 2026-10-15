@@ -1,7 +1,7 @@
 key,new_key,value
 a,vokāļi,a|ā|i|ī|u|ū|e|ē|ie|ai|ei|au|ou|oi|ui|o|eu|iu|æ|ɛ|ǣ|ɛ̄|ɔ|ō|ø
 d,līdzskaņi,b|c|č|d|dz|dž|f|g|ģ|h|j|k|ķ|l|ļ|m|n|ņ|p|r|s|š|t|v|z|ž|dz|dž
-b,balsīgi_līdzsk,g|ģ|d|dz|dž|b|z|ž
+b,balsīgi_līdzsk,g|ģ|d|d_?z|d_?ž|b|z|ž
 c,nebalsīgi_līdzsk,k|ķ|t|c|č|p|s|š|f
 l,īsie_patsk,e|a|i|u|æ|ɛ|ɔ
 j,vokāļi_e_plati,a|ā|au|ai|u|ū|o|æ|ǣ

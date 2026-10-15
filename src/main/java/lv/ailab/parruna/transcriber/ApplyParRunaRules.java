@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ApplyParRunaRules {
     private static String rules_file = "/parruna/rules.csv";
@@ -25,15 +26,22 @@ public class ApplyParRunaRules {
     }
 
 
-    private String generateWordformPronunciation(Wordform wf, String lemma_pronunciation) {
+    public String generateWordformPronunciation(Wordform wf, Wordform lemma, String lemma_pronunciation) {
         // FIXME: Figure out how to limit the application of rules only onto
         //  non-root and modified root text.
         // TODO: First apply the special rules
+        String lemma_root_pronunciation = applySpecialRules(wf, lemma_pronunciation);
+
+        // FIXME: Figure out how to get lemma root here - lemma.getValue("Pamatformas celms") might work?
+        lemma_root_pronunciation = generateRootPronunciation(wf.getToken(), lemma.getValue("Pamatformas celms"), lemma_pronunciation);
+
+        // TODO: Figure out how to apply ParRuna rules partially to the word
+        //  Wordform changes can affect the root pronunciation as well
+        // FIXME: This assumes root doesn't get changed
+        String a = lemma_root_pronunciation + applyRules(wf.getEnding().getEnding());
 
 
         // TODO: Second apply basic rules
-
-
         return wf.getToken();
     }
 
@@ -67,10 +75,7 @@ public class ApplyParRunaRules {
                 String lookAhead = applyMetas(dataRow[2]);
                 String coreReplace = dataRow[3];
 
-                String pattern = String.format(pattern_base, lookBehind, coreMatch, lookAhead);
-                Pattern p = Pattern.compile(pattern);
-                ParrunaRules r = new ParrunaRules(p, coreReplace, coreMatch.length());
-
+                ParrunaRules r = new ParrunaRules(lookBehind, coreMatch, lookAhead, coreReplace);
                 rules.add(r);
             }
             csv.close();
@@ -170,31 +175,126 @@ public class ApplyParRunaRules {
             while (matcher.find()) {
                 matchStart = matcher.start();
                 matchEnd = matcher.end();
-            }
 
-            if (matchStart >= 0) {
+                if (matchStart >= 0) {
 //                System.out.println(sb.substring(matchStart, matchEnd)+" -> "+meta.getMetaPattern());
-                sb.replace(matchStart, matchEnd, meta.getMetaPattern());
-                break;
+                    sb.replace(matchStart, matchEnd, meta.getMetaPattern());
+//                break;
+                }
             }
         }
         return sb.toString();
     }
 
-    private String generateRootPronunciation() {
-        // TODO: List all variants, when base ending modifies root pronunciation.
-        //  then take off ending
-        // TODO: Use the resources.parruna.rules.csv in the opposite direction to get the base root pronunciation.
-        //  i.e. if taking the ending off would not trigger a rule,
-        //  then apply the rule in reverse to the lemma_ponunciation
 
+    private String getNaiveOrthography(String base) {
+        StringBuilder sb = new StringBuilder(base);
+        return sb.toString();
+    }
+
+
+    public String applyRulesToEnding(String ending) {
+        // FIXME: Quick hacky way to ensure that string doesn't get interpreted as
+        //  being at the start of a word for rules application purposes.
+        String sample = applyRules("hhh"+ending);
+        sample = sample.replace("h", "");
+        return sample;
+    }
+
+    public String generateRootPronunciation(String lemma, String lemma_root, String lemma_pronunciation) {
         // List of changes that the ending may do to the root:
         // 1) Voicing, devoicing - must be extra careful as the changes here cascade back
         // 2) Partial vocalization - i^, u^
         // 3) Assimilation - zs, žs, ss, šs, ds, džs, cs, ts, čs
 
-        return "test";
+        StringBuilder lexeme_root_pronunciation;
+         // Ja nav nekādas galotnes, tad lemmas izruna ir arī saknes izruna
+        if (lemma.length() == lemma_root.length()) {
+            return lemma_pronunciation;
+        }
+
+        String lexeme_ending = lemma.substring(lemma_root.length());
+        if (lemma_pronunciation.endsWith(lexeme_ending)) {
+            // Ja galotnes izruna jau ir tieši tāda pati fonētiskā pierakstā, tad vnk noņemam to
+            // -s, -š, -t
+            lexeme_root_pronunciation = new StringBuilder(lemma_pronunciation.substring(0, lemma_pronunciation.length() - lexeme_ending.length()));
+        } else {
+            // TODO: Pārbaudīt vai strādā visa veida galotnēm ar specsimboliem
+            //  -u_ot, -ē=t, -ax
+            String sample = applyRulesToEnding(lexeme_ending);
+
+            String regex = sample.chars()
+                    .mapToObj(c -> Pattern.quote(String.valueOf((char) c)))
+                    .collect(Collectors.joining("[qx_=\\\\]*")) + "$";
+
+            lexeme_root_pronunciation = new StringBuilder(lemma_pronunciation.replaceAll(regex, ""));
+        }
+
+        // 3) Assimilation - zs, žs, ss, šs, ds, džs, cs, ts, čs
+        Matcher ts_ds_matcher = Pattern.compile(".*([td])s").matcher(lemma);
+        if (lemma.matches(".*(dz|dž|c|č|z|ž|s|š)s")) {
+            if (lexeme_root_pronunciation.toString().matches(".*[:s\\\\]")) {
+                lexeme_root_pronunciation.setLength(lexeme_root_pronunciation.length() - 1);
+            }
+        } else if (ts_ds_matcher.matches()) {
+            if (ts_ds_matcher.group(1).equals("t")) {
+                lexeme_root_pronunciation.setLength(lexeme_root_pronunciation.length() - 1);
+                lexeme_root_pronunciation.append('t');
+            } else if (ts_ds_matcher.group(1).equals("d")) {
+                lexeme_root_pronunciation.setLength(lexeme_root_pronunciation.length() - 1);
+                lexeme_root_pronunciation.append('d');
+            }
+        }
+
+        // FIXME: It kā risinājums ar _ pielikšanu metas.csv failā strādā, bet tas nav īsti glīti
+        //   vajadzētu tā kā nodalīt atsevišķi ortogrāfiski pierakstītās skaņas un LVMLA formātā.
+        // 1) Voicing, devoicing - must be extra careful as the changes here cascade back
+        List<String> voiced_c = List.of(applyMetas("<balsīgi_līdzsk>").replace("?", "").split("\\|"));
+        List<String> unvoiced_c = List.of(applyMetas("<nebalsīgi_līdzsk>").split("\\|"));
+
+        if (lemma.matches(applyMetas(".*(<nebalsīgi_līdzsk>)$"))) {
+            if (lemma_root.matches(applyMetas(".*(<balsīgi_līdzsk>)$"))) {
+                Matcher unvoiced_matcher = Pattern.compile(applyMetas("(<nebalsīgi_līdzsk>)+(<balsīgi_līdzsk>)?$")).matcher(lexeme_root_pronunciation);
+                if (unvoiced_matcher.find()) {
+                    int start = unvoiced_matcher.start();
+                    for (int i = start; i < lexeme_root_pronunciation.length(); i++) {
+                        String ch = String.valueOf(lexeme_root_pronunciation.charAt(i));
+                        int pos = unvoiced_c.indexOf(ch);
+                        if (pos != -1 && !ch.equals("f")) {
+                            lexeme_root_pronunciation.replace(i, i + 1, voiced_c.get(pos));
+                        }
+                    }
+                }
+                System.out.println("Voicing mismatch - b,nb");
+            }
+        } else if (lemma.matches(applyMetas(".*(<balsīgi_līdzsk>)$"))) {
+            if (lemma_root.matches(applyMetas(".*(<nebalsīgi_līdzsk>)$"))) {
+                // TODO: Nezinu, vai šādi gadījumi maz ir?
+                System.out.println("Voicing mismatch - nb,b");
+            }
+        }
+
+        // 2) Partial vocalization - i^, u^
+        if (lemma.matches(applyMetas(".*(j|v)(<līdzskaņi>)$"))) {
+            if (lemma_root.matches(".*([jv])$")) {
+                Matcher i_u_matcher = Pattern.compile("([iu])\\^$").matcher(lexeme_root_pronunciation);
+                if (i_u_matcher.find()) {
+                    int start = i_u_matcher.start();
+
+                    if (i_u_matcher.group(1).equals("i")) {
+                        lexeme_root_pronunciation.replace(start, lexeme_root_pronunciation.length(), "j");
+                    } else if (i_u_matcher.group(1).equals("u")) {
+                        lexeme_root_pronunciation.replace(start, lexeme_root_pronunciation.length(), "v");
+                    }
+                }
+                System.out.println("Possible vocalization in lemma");
+            }
+        }
+
+        System.out.println(">>"+lexeme_root_pronunciation);
+        return lexeme_root_pronunciation.toString();
     }
+
 
 
     private String applySpecialRules(Wordform wf, String pronunciation) {
@@ -223,7 +323,7 @@ public class ApplyParRunaRules {
         // TODO: Lokāmais ciešamās kārtas pagātnes divdabis ar izskaņu -ts, -ta
         // TODO: Daļēji lokāms divdabis ar izskaņu -dams, -dama
 
-        return "test";
+        return pronunciation;
     }
 
 }
