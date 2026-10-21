@@ -1,17 +1,33 @@
 package lv.ailab.parruna.transcriber;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import lv.semti.morphology.analyzer.Wordform;
+import lv.semti.morphology.attributes.AttributeNames;
+import lv.semti.morphology.lexicon.Paradigm;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Morphotranscriber {
-    public Morphotranscriber() {
-
+    ApplyParRunaRules rules;
+    public Morphotranscriber() throws IOException
+    {
+        rules = new ApplyParRunaRules();
     }
 
-    public void transcribe(List<Wordform> wfs, Wordform lemma, String lemma_pronunciation) throws IOException {
+    /**
+     * TODO: add more description.
+     * Returns null for unsupported paradigms.
+     */
+    public List<Wordform> transcribe(
+            List<Wordform> wfs, String lemma, String lemma_pronunciation, Paradigm paradigm) {
+        // Beware: sometimes null stems can happen, sometimes either stem2 or
+        // stem3 can be null, but not both. /Lauma
+        if (wfs == null)
+            return null;
+        if (paradigm.name.endsWith("-ltg"))
+            return null; // Latgalian not supported as of now.
         // TODO: Iterate over wordform and get each wordforms pronunciation
         //  understand how best to structure the functions in the java project
         //  probably a separate the rules based pronunciation generation in a separate function
@@ -19,9 +35,15 @@ public class Morphotranscriber {
         // Actually no the initialization should just set up the object and then call a a
         // different function defined in this file that does the call and return logic
 
-        ApplyParRunaRules rules = new ApplyParRunaRules();
+        List<Wordform> result = new ArrayList<>();
         for (Wordform wf: wfs) {
             String wf_pron = rules.generateWordformPronunciation(wf, lemma, lemma_pronunciation);
+            // I'm not completely sure, what is better – to clone or not, but
+            // this seems a smidge safer for various future uses. /Lauma
+            Wordform edited = (Wordform) wf.clone();
+            edited.addAttribute(AttributeNames.i_Pronunciation, wf_pron);
+            result.add(edited);
         }
+        return result;
     }
 }
