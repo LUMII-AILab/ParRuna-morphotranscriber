@@ -2,6 +2,7 @@ package lv.ailab.parruna.transcriber;
 
 import lv.semti.morphology.analyzer.Wordform;
 import lv.semti.morphology.attributes.AttributeNames;
+import lv.semti.morphology.lexicon.StemType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +27,14 @@ public class ApplyParRunaRules {
     }
 
 
-    public String generateWordformPronunciation(Wordform wf, Wordform lemma, String lemma_pronunciation) {
+    public String generateWordformPronunciation(Wordform wf, String lemma, String lemma_pronunciation) {
         // FIXME: Figure out how to limit the application of rules only onto
         //  non-root and modified root text.
         // TODO: First apply the special rules
         String lemma_root_pronunciation = applySpecialRules(wf, lemma_pronunciation);
 
         // FIXME: Figure out how to get lemma root here - lemma.getValue("Pamatformas celms") might work?
-        lemma_root_pronunciation = generateRootPronunciation(wf.getToken(), lemma.getValue("Pamatformas celms"), lemma_pronunciation);
+        lemma_root_pronunciation = generateRootPronunciation(wf.getToken(), wf.lexeme.getStem(StemType.STEM1), lemma_pronunciation);
 
         // TODO: Figure out how to apply ParRuna rules partially to the word
         //  Wordform changes can affect the root pronunciation as well
