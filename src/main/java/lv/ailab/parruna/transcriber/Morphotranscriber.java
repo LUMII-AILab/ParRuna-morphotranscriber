@@ -3,15 +3,11 @@ package lv.ailab.parruna.transcriber;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import lv.semti.morphology.analyzer.Wordform;
-import lv.semti.morphology.attributes.AttributeNames;
 import lv.semti.morphology.lexicon.Paradigm;
+import lv.semti.morphology.lexicon.StemType;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+
 public class Morphotranscriber {
     ApplyParRunaRules rules;
     NotationConverter notations;
@@ -49,8 +45,9 @@ public class Morphotranscriber {
         }
 
         List<Wordform> result = new ArrayList<>();
+        String lemma_root_pron = rules.generateRootPronunciation(lemma, wfs.get(0).lexeme.getStem(StemType.STEM1), lemma_pronunciation);
         for (Wordform wf: wfs) {
-            String wf_pron = rules.generateWordformPronunciation(wf, lemma, lemma_pronunciation);
+            String wf_pron = rules.generateWordformPronunciation(wf, lemma_root_pron);
             // I'm not completely sure, what is better – to clone or not, but
             // this seems a smidge safer for various future uses. /Lauma
             Wordform edited = (Wordform) wf.clone();

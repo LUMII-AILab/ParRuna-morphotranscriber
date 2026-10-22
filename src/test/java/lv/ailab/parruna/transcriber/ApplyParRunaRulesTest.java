@@ -2,6 +2,7 @@ package lv.ailab.parruna.transcriber;
 
 import lv.semti.morphology.analyzer.Analyzer;
 import lv.semti.morphology.analyzer.Wordform;
+import lv.semti.morphology.lexicon.Paradigm;
 import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +44,21 @@ public class ApplyParRunaRulesTest {
 
         assertEquals("slazd", a.generateRootPronunciation(lemma, root, pronunciation));
     }
+
+    @Test
+    public void generateAllWordforms() throws Exception {
+        Analyzer a = new Analyzer();
+        Morphotranscriber m = new Morphotranscriber();
+
+        String lemma = "rēgs";
+        int lemma_paradigm = 1;
+        String pronunciation = "rĒ=ks";
+
+        ArrayList<Wordform> wfs = a.generateInflectionsFromParadigm(lemma, lemma_paradigm);
+        Paradigm p = a.paradigms.get(0);
+        List<Wordform> wfs_pronunciations = m.transcribe(wfs, lemma, pronunciation, p);
+    }
+
 
     @Test
     public void lvmfaToIPATest() throws IOException {

@@ -27,23 +27,18 @@ public class ApplyParRunaRules {
     }
 
 
-    public String generateWordformPronunciation(Wordform wf, String lemma, String lemma_pronunciation) {
+    public String generateWordformPronunciation(Wordform wf, String lemma_root_pronunciation) {
         // FIXME: Figure out how to limit the application of rules only onto
         //  non-root and modified root text.
         // TODO: First apply the special rules
-        String lemma_root_pronunciation = applySpecialRules(wf, lemma_pronunciation);
-
-        // FIXME: Figure out how to get lemma root here - lemma.getValue("Pamatformas celms") might work?
-        lemma_root_pronunciation = generateRootPronunciation(wf.getToken(), wf.lexeme.getStem(StemType.STEM1), lemma_pronunciation);
+        lemma_root_pronunciation = applySpecialRules(wf, lemma_root_pronunciation);
 
         // TODO: Figure out how to apply ParRuna rules partially to the word
         //  Wordform changes can affect the root pronunciation as well
+
         // FIXME: This assumes root doesn't get changed
-        String a = lemma_root_pronunciation + applyRules(wf.getEnding().getEnding());
-
-
-        // TODO: Second apply basic rules
-        return wf.getToken();
+        // FIXME: This assumes no prefixes, cf. visātrākais
+        return lemma_root_pronunciation + applyRulesToEnding(wf.getEnding().getEnding());
     }
 
 
@@ -158,7 +153,6 @@ public class ApplyParRunaRules {
                 pos--;
             }
         }
-        System.out.println(sb);
         return sb.toString();
     }
 
@@ -266,12 +260,10 @@ public class ApplyParRunaRules {
                         }
                     }
                 }
-                System.out.println("Voicing mismatch - b,nb");
             }
         } else if (lemma.matches(applyMetas(".*(<balsīgi_līdzsk>)$"))) {
             if (lemma_root.matches(applyMetas(".*(<nebalsīgi_līdzsk>)$"))) {
                 // TODO: Nezinu, vai šādi gadījumi maz ir?
-                System.out.println("Voicing mismatch - nb,b");
             }
         }
 
@@ -288,11 +280,8 @@ public class ApplyParRunaRules {
                         lexeme_root_pronunciation.replace(start, lexeme_root_pronunciation.length(), "v");
                     }
                 }
-                System.out.println("Possible vocalization in lemma");
             }
         }
-
-        System.out.println(">>"+lexeme_root_pronunciation);
         return lexeme_root_pronunciation.toString();
     }
 
