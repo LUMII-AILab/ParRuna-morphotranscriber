@@ -17,8 +17,10 @@ public class Morphotranscriber {
     }
 
     /**
-     * TODO: add more description.
-     * Returns null for unsupported paradigms.
+     * TODO: add more description?
+     * Returns cloned list of wordforms with added LVMFA pronunciation in
+     * `AttributeNames.i_Pronunciation` attribute or null, if the paradigm is
+     * not unsupported yet.
      */
     public List<Wordform> transcribe(
             List<Wordform> wfs, String lemma, String lemma_pronunciation, Paradigm paradigm) {
@@ -45,5 +47,23 @@ public class Morphotranscriber {
             result.add(edited);
         }
         return result;
+    }
+
+    /**
+     * Converts internally used LVMFA type transcription to IPA.
+     */
+    public String lvmfaToIpa(String lvmfa)
+    {
+        // TODO implement
+        return null;
+    }
+
+    /**
+     * Converts internally used LVMFA type transcription to LFA.
+     */
+    public String lvmfaToLfa(String lvmfa)
+    {
+        // TODO implement
+        return null;
     }
 }
