@@ -29,6 +29,7 @@ public class ApplyParRunaRulesTest {
         a.applyRules("slazds");
         a.applyRules("mežs");
         a.applyRules("kooperatīvs");
+        a.applyRules("rēgs");
 //        assertEquals("slasc", a.applyRules("slazds"));
     }
 
@@ -43,6 +44,11 @@ public class ApplyParRunaRulesTest {
         assertEquals("slazd", a.generateRootPronunciation(lemma, root, pronunciation));
     }
 
-
-
+    @Test
+    public void lvmfaToIPATest() throws IOException {
+        Morphotranscriber m = new Morphotranscriber();
+        String ipa = m.lvmfaToIpa("%vis\"a_ukstāk");
+        String lfa = m.lvmfaToLfa("%vis\"a_ukstāk");
+        System.out.println(ipa+" "+lfa);
+    }
 }

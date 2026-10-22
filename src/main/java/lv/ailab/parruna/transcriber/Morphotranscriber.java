@@ -3,6 +3,9 @@ package lv.ailab.parruna.transcriber;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import lv.semti.morphology.analyzer.Wordform;
 import lv.semti.morphology.attributes.AttributeNames;
 import lv.semti.morphology.lexicon.Paradigm;
@@ -11,9 +14,13 @@ import lv.semti.morphology.lexicon.Paradigm;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Morphotranscriber {
     ApplyParRunaRules rules;
+    NotationConverter notations;
+
+
     public Morphotranscriber() throws IOException
     {
         rules = new ApplyParRunaRules();
+        notations = new NotationConverter();
     }
 
     /**
@@ -37,6 +44,10 @@ public class Morphotranscriber {
         // Actually no the initialization should just set up the object and then call a a
         // different function defined in this file that does the call and return logic
 
+        if (lemma_pronunciation == null) {
+            lemma_pronunciation = rules.applyRules(lemma);
+        }
+
         List<Wordform> result = new ArrayList<>();
         for (Wordform wf: wfs) {
             String wf_pron = rules.generateWordformPronunciation(wf, lemma, lemma_pronunciation);
@@ -49,13 +60,13 @@ public class Morphotranscriber {
         return result;
     }
 
+    // TODO: Add toggle for intonation data in external formats (i.e. LFA, IPA)
     /**
      * Converts internally used LVMFA type transcription to IPA.
      */
     public String lvmfaToIpa(String lvmfa)
     {
-        // TODO implement
-        return null;
+        return notations.lvmfaToIPA(lvmfa);
     }
 
     /**
@@ -63,7 +74,6 @@ public class Morphotranscriber {
      */
     public String lvmfaToLfa(String lvmfa)
     {
-        // TODO implement
-        return null;
+        return notations.lvmfaToLFA(lvmfa);
     }
 }
